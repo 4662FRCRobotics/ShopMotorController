@@ -5,33 +5,35 @@ outline shop test motor controller
 #include <Servo.h>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x3F,16,2);
+LiquidCrystal_I2C display(0x3F,20,4);
 
-#define THROTTLE_0_PIN A0
-int DIRCTN_SW_PIN = 2;
-int ON_OFF_PIN = 4;
+int kPIN_THROTTLE = A0;
+int kPIN_DIRECTION = 2;
+int kPIN_ON = 8;
+int kPIN_PWM_OUT = 5;
+int kDISPLAY_LINE = 0;
 
-Servo Speed_cntl_0;
-int I_THROTTLE_MAX = 500;
-double D_THROTTLE_MAX = I_THROTTLE_MAX;
-int iThrottle0Val = 0;
-double dThrottle0Val = 0.0;
-int iServoCenter = 1500;
-int iServo0Val = iServoCenter;
-int iDirctnVal = 0;
-String sDirection = "Fwd";
-int iOnSw = 0;
-String sOnSw = "Off";
+Servo SpeedControl;
+
+int kI_THROTTLE_MAX = 500;
+double kD_THROTTLE_MAX = kI_THROTTLE_MAX;
+
+int iThrottleVal = 0;
+double dThrottleVal = 0.0;
+int k_iTHROTTLE_ZERO = 1500;
+
+int iIsFwd = 0;
+int iIsOn = 0;
 
 void setup() {
  
-   lcd.init();
-   lcd.clear();
-   lcd.setBacklight(200);
-//   lcd.print("Servo Calibrate");
-  Speed_cntl_0.attach(9);
-  pinMode(DIRCTN_SW_PIN, INPUT_PULLUP);
-  pinMode(ON_OFF_PIN, INPUT_PULLUP);
+    display.init();
+    display.clear();
+    display.setBacklight(200);
+
+    SpeedControl.attach(kPIN_PWM_OUT);
+    pinMode(kPIN_DIRECTION, INPUT_PULLUP);
+    pinMode(kPIN_ON, INPUT_PULLUP);
 
 }
 
@@ -42,20 +44,19 @@ void loop() {
     and if speed control is off, read the direction switch
     DO NOT CHANGE MOTOR DIRECTION WHILE RUNNING
     */
-    iOnSw = digitalRead(ON_OFF_PIN);
-    if (iOnSw == LOW) {
-        sOnSw = "Off";
-        iDirctnVal = digitalRead(DIRCTN_SW_PIN);
+    iIsOn = digitalRead(kPIN_ON);
+    if (iIsOn == LOW) {
+        iIsFwd = digitalRead(kPIN_DIRECTION);
     } else {
-        sOnSw = "On";
+
     }
 
     /*
     read speed control potentiometer and convert to throttle range limit
     convert to double for calcs
     */
-    iThrottle0Val = map(analogRead(THROTTLE_0_PIN),0,1023,0,I_THROTTLE_MAX);
-    dThrottle0Val = iThrottle0Val;
+    iThrottleVal = map(analogRead(kPIN_THROTTLE),0,1023,0,kI_THROTTLE_MAX);
+    dThrottleVal = iThrottleVal;
     
     /*
     PWM speed control signal is in the range of 1000 to 2000
@@ -63,18 +64,23 @@ void loop() {
     use integers for the PWM control
     translate to range of 1 to -1 for use in WPILib speed range programming
     */
-    if (iDirctnVal == LOW) {
-        iServo0Val = iServoCenter + iThrottle0Val;
-        dThrottle0Val = 0.0 - (dThrottle0Val / D_THROTTLE_MAX);
-        sDirection = "Fwd";
+    if (iIsFwd == HIGH) {
+        iThrottleVal = k_iTHROTTLE_ZERO + iThrottleVal;
+        dThrottleVal = 0.0 - (dThrottleVal / kD_THROTTLE_MAX);
     } else {
-        iServo0Val = iServoCenter - iThrottle0Val;
-        dThrottle0Val = 0.0 + (dThrottle0Val / D_THROTTLE_MAX);
-        sDirection = "Rev";
+        iThrottleVal = k_iTHROTTLE_ZERO - iThrottleVal;
+        dThrottleVal = 0.0 + (dThrottleVal / kD_THROTTLE_MAX);
     }
 
-    lcd.setCursor(0,1);
-    lcd.print(pos);
-    lcd.print("   ");
+    if (iIsOn == HIGH) {
+        SpeedControl.write(iThrottleVal);
+    } else {
+        SpeedControl.write(k_iTHROTTLE_ZERO);
+    }
+
+    display.setCursor(0,kDISPLAY_LINE);
+    display.print("S1: ");
+    display.print(dThrottleVal);
+    display.print(" ");
 
 }
