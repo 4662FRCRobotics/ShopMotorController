@@ -73,14 +73,16 @@ void loop() {
     }
 
     if (iIsOn == HIGH) {
-        SpeedControl.write(iThrottleVal);
+        SpeedControl.writeMicroseconds(iThrottleVal);
     } else {
-        SpeedControl.write(k_iTHROTTLE_ZERO);
+        SpeedControl.writeMicroseconds(k_iTHROTTLE_ZERO);
     }
 
     display.setCursor(0,kDISPLAY_LINE);
     display.print("S1: ");
     display.print(dThrottleVal);
     display.print(" ");
+
+    delay(20);
 
 }

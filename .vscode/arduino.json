@@ -1,5 +1,7 @@
 {
-    "board": "arduino:avr:uno",
+    "board": "arduino:avr:nano",
     "sketch": "ShopMotorController.ino",
-    "port": "COM3"
+    "port": "COM6",
+    "configuration": "cpu=atmega328",
+    "programmer": "ArduinoISP.org"
 }
