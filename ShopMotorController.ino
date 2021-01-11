@@ -22,12 +22,18 @@ Servo SpeedControl[4];
 
 int kI_THROTTLE_MAX = 500;
 double kD_THROTTLE_MAX = kI_THROTTLE_MAX;
-int kI_SERVO_MAX = 180;
 
 int iThrottleVal = 0;
 double dThrottleVal = 0.0;
 int k_iTHROTTLE_ZERO = 1500;
 char cThrottleVal[6];
+
+int kPIN_SERVO_1[] = {A2,A2,A6,A6};
+int kPIN_SERVO_2[] = {A3,A3,A7,A7};
+int kI_SERVO_MAX = 180;
+int iServoVal = 0;
+int iServoVal1 = 0;
+int iServoVal2 = 0;
 
 int iIsFwd[4];
 String sFwdRev;
@@ -79,89 +85,9 @@ void loop() {
             iIsOn = !digitalRead(kPIN_ON[iControlIndex]);
 
             if (iIsSpeed == HIGH) {
-
-                if (iIsOn != HIGH) {
-                    iIsFwd[iControlIndex] = digitalRead(kPIN_DIRECTION[iControlIndex]);
-                }
-
-                /*
-                read speed control potentiometer and convert to throttle range limit
-                convert to double for calcs
-                */
-                if (iIsAltSpeed == LOW){
-                    iThrottleVal = map(analogRead(kPIN_THROTTLE[iControlIndex]),0,1023,0,kI_THROTTLE_MAX);
-                } else {
-                    iThrottleVal = map(analogRead(kPIN_THROTTLE_ALT[iControlIndex]),0,1023,0,kI_THROTTLE_MAX);
-                }
-                dThrottleVal = iThrottleVal;
-                
-                /*
-                PWM speed control signal is in the range of 1000 to 2000
-                where 1000 is full reverse, 1500 is stop, and 2000 is full forward
-                use integers for the PWM control
-                translate to range of 1 to -1 for use in WPILib speed range programming
-                */
-                if (iIsFwd[iControlIndex] == HIGH) {
-                    iThrottleVal = k_iTHROTTLE_ZERO + iThrottleVal;
-                    dThrottleVal = 0.0 - (dThrottleVal / kD_THROTTLE_MAX);
-                    sFwdRev = "FWD";
-                } else {
-                    iThrottleVal = k_iTHROTTLE_ZERO - iThrottleVal;
-                    dThrottleVal = 0.0 + (dThrottleVal / kD_THROTTLE_MAX);
-                    sFwdRev = "REV";
-                }
-
-                if (iIsOn == HIGH) {
-                    sOnOff = "ON ";
-                } else {
-                    iThrottleVal = k_iTHROTTLE_ZERO;
-                    sOnOff = "OFF";
-                }
-
-                SpeedControl[iControlIndex].writeMicroseconds(iThrottleVal);
-
-                dtostrf(dThrottleVal, 2, 2, cThrottleVal);
-                sprintf(cDisplayLine[iControlIndex],"Speed%1u %3s %5s %3s", iControlIndex+1, sFwdRev.c_str(), cThrottleVal, sOnOff.c_str());
-
-/*
-                display.setCursor(0,kDISPLAY_LINE[iControlIndex]);
-                display.print("Speed");
-                display.print(iControlIndex+1);
-                display.print(" ");
-                display.print(dThrottleVal);
-                display.print(" ");
-                display.print(sOnOff);
-*/
-
+                Speed();
             } else {
-                            
-                /*
-                read speed control potentiometer and convert to servo range limit
-                */
-                if (iIsAltSpeed == LOW){
-                    iThrottleVal = map(analogRead(kPIN_THROTTLE[iControlIndex]),0,1023,0,kI_SERVO_MAX);
-                } else {
-                    iThrottleVal = map(analogRead(kPIN_THROTTLE_ALT[iControlIndex]),0,1023,0,kI_SERVO_MAX);
-                }
-
-                if (iIsOn == HIGH) {
-                    sOnOff= "ON ";
-                } else {
-                    sOnOff = "OFF";
-                }
-
-                SpeedControl[iControlIndex].write(iThrottleVal);
-
-                sprintf(cDisplayLine[iControlIndex],"Servo%1u %3u %3s      ", iControlIndex+1, iThrottleVal, sOnOff.c_str());
-                /*
-                display.setCursor(0,iControlIndex);
-                display.print("Servo");
-                display.print(iControlIndex+1);
-                display.print(" ");
-                display.print(iThrottleVal);
-                display.print(" ");
-                display.print(sOnOff);
-                */
+                Servo();
             }
         }
     }
@@ -174,7 +100,79 @@ void loop() {
         }
     }
 
+}
 
-//    delay(20);
+void Speed() {
+
+    if (iIsOn != HIGH) {
+        iIsFwd[iControlIndex] = digitalRead(kPIN_DIRECTION[iControlIndex]);
+    }
+
+    /*
+    read speed control potentiometer and convert to throttle range limit
+    convert to double for calcs
+    */
+    if (iIsAltSpeed == LOW){
+        iThrottleVal = map(analogRead(kPIN_THROTTLE[iControlIndex]),0,1023,0,kI_THROTTLE_MAX);
+    } else {
+        iThrottleVal = map(analogRead(kPIN_THROTTLE_ALT[iControlIndex]),0,1023,0,kI_THROTTLE_MAX);
+    }
+    dThrottleVal = iThrottleVal;
+    
+    /*
+    PWM speed control signal is in the range of 1000 to 2000
+    where 1000 is full reverse, 1500 is stop, and 2000 is full forward
+    use integers for the PWM control
+    translate to range of 1 to -1 for use in WPILib speed range programming
+    */
+    if (iIsFwd[iControlIndex] == HIGH) {
+        iThrottleVal = k_iTHROTTLE_ZERO + iThrottleVal;
+        dThrottleVal = 0.0 - (dThrottleVal / kD_THROTTLE_MAX);
+        sFwdRev = "FWD";
+    } else {
+        iThrottleVal = k_iTHROTTLE_ZERO - iThrottleVal;
+        dThrottleVal = 0.0 + (dThrottleVal / kD_THROTTLE_MAX);
+        sFwdRev = "REV";
+    }
+
+    if (iIsOn == HIGH) {
+        sOnOff = "ON ";
+    } else {
+        iThrottleVal = k_iTHROTTLE_ZERO;
+        sOnOff = "OFF";
+    }
+
+    SpeedControl[iControlIndex].writeMicroseconds(iThrottleVal);
+
+    dtostrf(dThrottleVal, 2, 2, cThrottleVal);
+    sprintf(cDisplayLine[iControlIndex],"Speed%1u %3s %5s %3s", iControlIndex+1, sFwdRev.c_str(), cThrottleVal, sOnOff.c_str());
+
+}
+
+void Servo() {
+
+    /*
+    read speed control potentiometer and convert to servo range limit
+    */
+    iServoVal1 = map(analogRead(kPIN_SERVO_1[iControlIndex]),0,1023,0,kI_SERVO_MAX);
+    iServoVal2 = map(analogRead(kPIN_SERVO_2[iControlIndex]),0,1023,0,kI_SERVO_MAX);
+ 
+    iIsFwd[iControlIndex] = digitalRead(kPIN_DIRECTION[iControlIndex]);
+    if (iIsFwd[iControlIndex] == HIGH) {
+        iServoVal1 = 180 - iServoVal1;
+        iServoVal2 = 180 - iServoVal2;
+    }
+
+    if (iIsOn == HIGH) {
+        iServoVal = iServoVal1;
+        sOnOff= "P1 ";
+    } else {
+        iServoVal = iServoVal2;
+        sOnOff = "P2 ";
+    }
+
+    SpeedControl[iControlIndex].write(iServoVal);
+
+    sprintf(cDisplayLine[iControlIndex],"Servo%1u %3u %3u %3s  ", iControlIndex+1, iServoVal1, iServoVal2, sOnOff.c_str());
 
 }
